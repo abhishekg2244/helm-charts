@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common-todo-chart.fullname" . }}
+  labels:
+    app: {{ include "common-todo-chart.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "common-todo-chart.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "common-todo-chart.name" . }}
+    spec:
+      containers:
+        - name: {{ include "common-todo-chart.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          resources: {{ toYaml .Values.resources | indent 12 }}
