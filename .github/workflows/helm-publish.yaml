@@ -1,0 +1,34 @@
+name: Publish Helm Chart
+on:
+  push:
+    paths:
+      - "common-todo-chart/**"
+      - ".github/workflows/helm-publish.yaml"
+jobs:
+  publish-helm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        run: sudo snap install helm --classic
+     
+
+      - name: Auto Bump Version
+        id: bump
+        run: |
+          current=$(grep '^version:' common-todo-chart/Chart.yaml | awk '{print $2}')
+          next=$(echo $current | awk -F. '{$NF = $NF + 1;} 1' OFS='.')
+          sed -i "s/version:.*/version: $next/" common-todo-chart/Chart.yaml
+          echo "next_version=$next" >> $GITHUB_ENV
+
+      - name: Login GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+
+      - name: Package Chart
+        run: helm package common-todo-chart
+
+      - name: Push Chart
+        run: helm push common-todo-chart-${{ env.next_version }}.tgz oci://ghcr.io/abhishekg2244/charts
+      
